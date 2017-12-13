@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>NN</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+	#time-management-chart {
+		resize: both;
+		overflow: auto;
+	}
+</style>
+    {{content-for "head"}}
+
+    <link rel="stylesheet" href="{{rootURL}}assets/vendor.css">
+    <link rel="stylesheet" href="{{rootURL}}assets/nn.css">
+	<script src="https://d3js.org/d3.v3.js"></script>
+    {{content-for "head-footer"}}
+  </head>
+  <body>
+    {{content-for "body"}}
+<div id ="process" name="process">
+	<div id ="time-management-chart" name="time-management-chart"></div>
+	<div id ="eguana-process-management" name="eguana-process-management"></div>
+</div>
+    <script src="{{rootURL}}assets/vendor.js"></script>
+    <script src="{{rootURL}}assets/nn.js"></script>
+
+    {{content-for "body-footer"}}
+  </body>
+</html>
