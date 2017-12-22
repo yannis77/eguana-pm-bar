@@ -3,46 +3,51 @@ import moment from 'moment';
 import d3 from 'd3';
 
 //set to true to draw the activities 
-//on top of the timesheet element.
+//on the spot, i.e. on top of the timesheet element.
 //Set to false to draw on a new line under the timesheet,
 //which is a little buggy.
-const drawActivitiesInPlace=true;
+const drawActivitiesInPlace=false;
 
 //adds a new empty line under clicked line.
 //i.e. if clicked is 5, all y's >= 5 are moved up one, resulting in an empty line. 
-//does not redraw, do that externally
-function new_line(that, y_clicked)
+//does not redraw, do that externally. If the function fails, returns -1. If it does note
+//add a line without a failure, returns 0. If it adds a line, returns 1.
+function new_line(that, y_clicked, st, et)
 {
 	if(drawActivitiesInPlace)
 	{
-		return;
+		return -1;
 	}
 	//using this to prefix empty lines and check
 	let emptyLineSign = " ";
 	//sanity check
-	if (!(that && that.dataObject.data))
+	if (!(that && that.dataObject && that.dataObject.data))
 	{
-		return;
+		return -1;
 	}
-	//check that the line is not already empty..
+	//check that the line below is not already empty. In this case, we should not add a new line, and we 
+	//need to update only the new data, which will happen outside.
 	//todo: improve character comparison and ideally use another way
-	if(that.axisTickTransform[y_clicked-1]===emptyLineSign)
+	//if the line below is already empty, return 0 to signal necessary processing on the data outside.
+	if(that.axisTickTransform[y_clicked-2]===emptyLineSign)
 	{
-		return;
+		return 0;
 	}
-
-	//add an empty line hdr on Y axis
-	that.axisTickTransform.splice(y_clicked-1, 0, emptyLineSign);
-
-	//Update rect Y's if needed..
-	for (var i=0;i< that.dataObject.data.length;i++)
+	else
 	{
-		if (that.dataObject.data[i].y>=y_clicked)
+		//add an empty line hdr on Y axis
+		that.axisTickTransform.splice(y_clicked-1, 0, emptyLineSign);
+		//Update rect Y's if needed..
+		for (var i=0;i< that.dataObject.data.length;i++)
 		{
-			that.dataObject.data[i].y++;
+			if (that.dataObject.data[i].y>=y_clicked)
+			{
+				that.dataObject.data[i].y++;
+				that._reDraw();//debug only to spot changes
+			}
 		}
+		return 1;
 	}
-
 }
 //end function new_line
 
@@ -278,9 +283,7 @@ export default Component.extend({
     if (!this.get('widthFactor')) {
       this.set('widthFactor', 0.75);
     }
-
     if (this.get('dataObject') && this.get('dataObject.data')) {
-      // get highest and lowest x and y values
       this.get('dataObject.data').forEach((entry) => {
         xValues = Math.max(xValues, entry.endtime);
         startX = Math.min(startX, entry.starttime);
@@ -297,14 +300,11 @@ export default Component.extend({
 
       // calculate chart dimension depending on screen size
       this._calculateDimension();
-
       if (this.get('protocol')) {
         heightmax = this.get('_height') * 0.95;
       } else {
         heightmax = this.get('_height') * 0.9;
       }
-
-      // remove svg before drawing the new one
       canvas = d3.select(thisChart).select('svg').remove();
       d3.select(tipSelection).remove();
 
@@ -412,7 +412,7 @@ export default Component.extend({
       .append('g')
       .attr('class', 'rect')
       .attr('y', (d) => {
-        const value = heightmax - ((d.y - startY) * rectHeight);
+		  let value = heightmax - ((d.y - startY) * rectHeight); 
         return value;
       })
       .attr('x', (d) => {
@@ -446,7 +446,6 @@ export default Component.extend({
 	//if this is not a process already detailed, or a detail..
 	if(!d.detail && !d.hasChildren)
 		  {
-			new_line(this, d.y);
 		    Ember.$.post("/basedata", interval,
 				function(data, status){
 				//if there are data to draw..
@@ -456,8 +455,15 @@ export default Component.extend({
 					{
 						thats.maxY2=data.maxY2;
 					}
-
-					//add new data
+					//add new line, if we must. If not (without a fail code) the extra process data should be one below..
+					if(new_line(thats, d.y, d.starttime, d.endtime)==0)
+					{
+						for(var p=0;p<data.data.length;p++)
+						{
+							data.data[p].y--;
+						}
+					}
+					//now add new data
 					thats.dataObject.data=thats.dataObject.data.concat(data.data);
 					//flag the diagram as having detailed activities..
 					d.hasChildren=true;
