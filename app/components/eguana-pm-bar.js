@@ -1,6 +1,5 @@
 import Ember from 'ember';
 import moment from 'moment';
-import d3 from 'd3';
 
 //set to true to draw the activities 
 //on the spot, i.e. on top of the timesheet element.
@@ -12,7 +11,7 @@ const drawActivitiesInPlace=false;
 //i.e. if clicked is 5, all y's >= 5 are moved up one, resulting in an empty line. 
 //does not redraw, do that externally. If the function fails, returns -1. If it does note
 //add a line without a failure, returns 0. If it adds a line, returns 1.
-function new_line(that, y_clicked, st, et)
+function new_line(that, y_clicked)
 {
 	if(drawActivitiesInPlace)
 	{
@@ -43,7 +42,7 @@ function new_line(that, y_clicked, st, et)
 			if (that.dataObject.data[i].y>=y_clicked)
 			{
 				that.dataObject.data[i].y++;
-				that._reDraw();//debug only to spot changes
+				//that._reDraw();//debug only to spot changes
 			}
 		}
 		return 1;
@@ -74,21 +73,21 @@ export default Component.extend({
   // -------------------------------------------------------------------------
   // Dependencies
   /** @type {ember/Service} */
-  session: service(),
+//  session: service(),
   /** @type {ember/Service} */
-  utils: service(),
+//  utils: service(),
   /** @type {ember/Service} */
-  store: service(),
+//  store: service(),
   /** @type {ember/Service} */
-  i18n: service(),
+//  i18n: service(),
   /** @type {ember/Service} */
-  endpoint: service(),
+//  endpoint: service(),
   /** @type {ember/Service} */
-  user: service(),
+//  user: service(),
   /** @type {ember/Service} */
-  resize: service(),
+//  resize: service(),
   /** @type {ember/Service} */
-  ctx: service(),
+//  ctx: service(),
 
 
   // -------------------------------------------------------------------------
@@ -127,7 +126,10 @@ export default Component.extend({
   _init: on('init', function _onInit() {
     schedule('afterRender', this, function _afterRender() {
       this.set('listenerFunction', this._reDraw.bind(this));
-      this.get('resize').addListener(document.querySelector('eguana-process-management'), this.get('listenerFunction'));
+      //this.get('resize').addListener(document.querySelector('#eguana-process-management'), this.get('listenerFunction'));
+
+//      this.resize.addListener(document.querySelector('#eguana-process-management'), this.get('listenerFunction'));
+
       if (this.get('dataObject') && this.get('dataObject.data') && this.get('dataObject.data.length') > 0) {
         this._reDraw();
       }
@@ -258,8 +260,10 @@ export default Component.extend({
    * @returns nothing
    */
   _reDraw() {
+
     const tipSelection = `div.${this.get('name')}`;
-    const thisChart = this.element.querySelector('#time-management-chart');
+//    const thisChart = this.element.querySelector('time-management-chart');
+    const thisChart = document.querySelector('#time-management-chart');
 
     let xValues = 0;
     let yValues = 0;
@@ -343,16 +347,12 @@ export default Component.extend({
    */
   _drawBars(rectHeight, heightmax) {
     const startY = this.get('_lowestYValue');
-    const thisChart = this.element.querySelector('#time-management-chart');
+//    const thisChart = this.element.querySelector('#time-management-chart');
+    const thisChart = document.querySelector('#time-management-chart');
+
     const axisTickTransformCount = [];
-/* do this on a more convenient place below..
-    for (let i = 1; i < this.get('axisTickTransform').length; i++) {
-      axisTickTransformCount.push(i);
-      if (this.get('_highestYValue') === i) {
-        break;
-      }
-    }
-*/
+
+/*
     const tip = d3.tip().attr('class', 'd3-tip').html((d) => {
       const startDate = moment.utc(d.starttime).format('DD.MM.YY');
       const endDate = moment.utc(d.endtime).format('DD.MM.YY');
@@ -373,7 +373,8 @@ export default Component.extend({
 
       tooltip += `${this.get('axisTickTransform')[d.y - 1]}`;
       tooltip += `<br>${this.get('i18n').t('calendar.startDate')}: ${startDate} - ${start}<br>${this.get('i18n').t('calendar.endDate')}:  ${endDate} - ${end}<br>`;
-      tooltip += `${this.get('i18n').t('component.table.duration')}: ${hours}:${minutes}:${seconds}<br>`;
+      tooltip += `<br>${this.i18n.t('calendar.startDate')}: ${startDate} - ${start}<br>${this.i18n.t('calendar.endDate')}:  ${endDate} - ${end}<br>`;
+      tooltip += `${this.i18n.t('component.table.duration')}: ${hours}:${minutes}:${seconds}<br>`;
       if (d.pointname) {
         tooltip += `Punktnummer: ${d.pointname}`;
       }
@@ -397,16 +398,18 @@ export default Component.extend({
     });
 
     tip.attr('class', this.get('name'));
-
-    const canvas = d3.select(thisChart)
+*/
+//    const canvas = d3.select(thisChart)
+    var canvas = d3.select(thisChart)
       .append('svg')
       .attr('width', this._width)
       .attr('height', this._height)
       .append('g')
       .attr('transform', 'translate(40, -45)');
-    canvas.call(tip);
+//    canvas.call(tip);
 
     const tm = canvas.selectAll('.rect')
+		//load rectangle data
       .data(this.dataObject.data)
       .enter()
       .append('g')
@@ -437,8 +440,8 @@ export default Component.extend({
         }
         return value;
       })
-      .on('mouseover', tip.show)
-      .on('mouseout', tip.hide)
+//      .on('mouseover', tip.show)
+//      .on('mouseout', tip.hide)
       .on('click', (d) => {
 	var thats = this;
 	//store all relevant variables to send with the request in the interval structure.
@@ -448,6 +451,7 @@ export default Component.extend({
 		  {
 		    Ember.$.post("/basedata", interval,
 				function(data, status){
+//			alert("Status: " + status +"\n Data len: " + data.data.length + "\n max:" + data.maxY2 +"\n draw on line: " + d.y + "\n Data from line: " +d.yOriginal );
 				//if there are data to draw..
 				if(data.data.length>0)
 				{	
@@ -456,7 +460,7 @@ export default Component.extend({
 						thats.maxY2=data.maxY2;
 					}
 					//add new line, if we must. If not (without a fail code) the extra process data should be one below..
-					if(new_line(thats, d.y, d.starttime, d.endtime)==0)
+					if(new_line(thats, d.y)==0)
 					{
 						for(var p=0;p<data.data.length;p++)
 						{
