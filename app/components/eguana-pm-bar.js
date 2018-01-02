@@ -530,7 +530,7 @@ export default Component.extend({
 
 				for(let g=0;g<thats.dataObject.data.length;g++)
 				{
-					if(!(thats.dataObject.data[g].starttime>=d.starttime && thats.dataObject.data[g].endtime<=d.endtime && thats.dataObject.data[g].detail))
+					if(!(thats.dataObject.data[g].starttime>=d.starttime && thats.dataObject.data[g].endtime<=d.endtime && thats.dataObject.data[g].y == d.y-1 && thats.dataObject.data[g].detail))
 					{
 						newdata.data.push(thats.dataObject.data[g]);
 					}
