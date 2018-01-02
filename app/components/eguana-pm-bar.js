@@ -9,7 +9,7 @@ const drawActivitiesInPlace=false;
 
 //adds a new empty line under clicked line.
 //i.e. if clicked is 5, all y's >= 5 are moved up one, resulting in an empty line. 
-//does not redraw, do that externally. If the function fails, returns -1. If it does note
+//does not redraw, do that externally. If the function fails, returns -1. If it does not
 //add a line without a failure, returns 0. If it adds a line, returns 1.
 function new_line(that, y_clicked)
 {
@@ -49,6 +49,51 @@ function new_line(that, y_clicked)
 	}
 }
 //end function new_line
+
+//removes a line if it should.
+//does not redraw, do that externally. If the function fails, returns -1. If it does not  
+//remove a line without a failure, returns 0. If it removes a line, returns 1.
+function del_line(that, y_clicked)
+{
+	if(drawActivitiesInPlace)
+	{
+		return -1;
+	}
+	//using this to prefix empty lines and check
+	let emptyLineSign = " ";
+	//sanity check
+	if (!(that && that.dataObject && that.dataObject.data))
+	{
+		return -1;
+	}
+	//if we find at least one more component having extra activities, the line is needed, return 0 to signal the fact.
+	for (var i=0;i< that.dataObject.data.length;i++)
+	{
+		if (that.dataObject.data[i].hasChildren && that.dataObject.data[i].y==y_clicked)
+		{
+			return 0;
+		}
+	}
+
+
+//if the empty line is not needed, then..
+	if(that.axisTickTransform[y_clicked-2]===emptyLineSign)
+	{
+		that.axisTickTransform.splice(y_clicked-2, 1);		
+		for (var i=0;i< that.dataObject.data.length;i++)
+		{
+			if (that.dataObject.data[i].y>=y_clicked)
+			{
+				that.dataObject.data[i].y--;
+				//that._reDraw();//debug only to spot changes
+			}
+		}
+
+		return 1;
+	}
+
+}
+//end function del_line
 
 const {
   on,
@@ -476,7 +521,26 @@ export default Component.extend({
 					}
 				}//there are data to draw
 			);
-		  }//this is not a detailed graph
+		  }//this is not a detailed graph or a graph having detailed view
+		  else 
+		  {//close, i.e. return to non-detailed view, if the graph is clicked again
+			  if(!d.detail && d.hasChildren)
+			  {
+				var newdata = {data:[], maxY2:0};
+
+				for(let g=0;g<thats.dataObject.data.length;g++)
+				{
+					if(!(thats.dataObject.data[g].starttime>=d.starttime && thats.dataObject.data[g].endtime<=d.endtime && thats.dataObject.data[g].detail))
+					{
+						newdata.data.push(thats.dataObject.data[g]);
+					}
+				}
+				thats.dataObject=newdata;
+				d.hasChildren=false;
+				del_line(thats, d.y);
+				thats._reDraw();
+			  }
+		  }
 
         const event = new CustomEvent('editEntry', { detail: { startTime: d.starttime } });
         thisChart.dispatchEvent(event);
