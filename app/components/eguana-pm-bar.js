@@ -69,12 +69,11 @@ function del_line(that, y_clicked)
 	//if we find at least one more component having extra activities, the line is needed, return 0 to signal the fact.
 	for (var i=0;i< that.dataObject.data.length;i++)
 	{
-		if (that.dataObject.data[i].hasChildren && that.dataObject.data[i].y==y_clicked)
+		if (that.dataObject.data[i].hasChildren && that.dataObject.data[i].y===y_clicked)
 		{
 			return 0;
 		}
 	}
-
 
 //if the empty line is not needed, then..
 	if(that.axisTickTransform[y_clicked-2]===emptyLineSign)
@@ -490,7 +489,8 @@ export default Component.extend({
       .on('click', (d) => {
 	var thats = this;
 	//store all relevant variables to send with the request in the interval structure.
-	var interval='{"data": [{"startTime":'+d.starttime+', "endTime":'+d.endtime+', "y":'+d.y+', "yOriginal":'+d.yOriginal+'}]}';
+//	var interval='{"data": [{"startTime":'+d.starttime+', "endTime":'+d.endtime+', "y":'+d.y+', "yOriginal":'+d.yOriginal+'}]}';
+	var interval='{"data": [{"clickedID":'+d.pointid+'}]}';
 	//if this is not a process already detailed, or a detail..
 	if(!d.detail && !d.hasChildren)
 		  {
@@ -500,6 +500,17 @@ export default Component.extend({
 				//if there are data to draw..
 				if(data.data.length>0)
 				{	
+
+				//Update Y to make sure it is drawn or right position
+				//remember maxY for each, to allow different nr of subprocesses for each process
+				//disable in case nr is common, and use member property maxY2 in the component. 
+					for (let k=0; k<data.data.length;k++)
+					{
+						data.data[k].y = d.y ;
+						data.data[k].maxY2 = data.maxY2;
+					}
+
+
 					if(data && data.maxY2>0)
 					{
 						thats.maxY2=data.maxY2;
@@ -530,7 +541,8 @@ export default Component.extend({
 
 				for(let g=0;g<thats.dataObject.data.length;g++)
 				{
-					if(!(thats.dataObject.data[g].starttime>=d.starttime && thats.dataObject.data[g].endtime<=d.endtime && thats.dataObject.data[g].y == d.y-1 && thats.dataObject.data[g].detail))
+//					if(!(thats.dataObject.data[g].starttime>=d.starttime && thats.dataObject.data[g].endtime<=d.endtime && thats.dataObject.data[g].y == d.y-1 && thats.dataObject.data[g].detail))
+					if(!(thats.dataObject.data[g].pointid===d.pointid && thats.dataObject.data[g].detail))
 					{
 						newdata.data.push(thats.dataObject.data[g]);
 					}
